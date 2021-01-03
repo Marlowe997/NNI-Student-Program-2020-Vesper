@@ -71,11 +71,103 @@
 
 ### 2.NNI安装及使用
 
+```
+ $ conda create -n nni python=3.8
+ $ conda activate nni
+ $ conda install pytorch torchvision torchaudio cudatoolkit=11.0 -c pytorch
+ $ pip insatll nni
+ $ git clone -b v1.9 https://github.com/Microsoft/nni.git
+ $ nnictl create --config nni\examples\trials\mnist-pytorch\config_windows.yml
+```
 
-
-### 3.NNI使用感受
-
-
+创造一个环境并启用
 
 ## NNI样例分析文档
 
+### 1 mnist-pytorch样例测试流程
+
+#### 1.1 基本信息
+
+- 测试平台：windows 10
+- 测试环境：Anaconda 3
+- conda版本：4.9.2
+- nni版本：1.8
+- torch版本：1.7.0
+
+#### 1.2 基本运行代码
+
+##### 1.2.1 配置文件：mnist-pytorch\config_windows.yml
+
+```yml
+authorName: default
+experimentName: example_mnist_pytorch
+trialConcurrency: 1    #同时运行trial的个数
+maxExecDuration: 2h    #整个调参过程最大时长
+maxTrialNum: 10        #NNI最大Trial任务数
+#choice: local, remote, pai  
+trainingServicePlatform: local #指定Experiment 运行的平台为local
+searchSpacePath: search_space.json #搜索空间
+#reset nni_experiment dir
+logDir: E:/AI/nniGit_experiments  #日志路径
+logLevel: info
+#choice: true, false
+useAnnotation: false  #不删除searchSpacePath字段
+tuner:
+  #choice: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner, GPTuner
+  #SMAC (SMAC should be installed through nnictl)
+  builtinTunerName: TPE #内置调参算法为TPE
+  classArgs:
+    #choice: maximize, minimize
+    optimize_mode: maximize
+trial:
+  command: python mnist.py
+  codeDir: .  #Trial文件的目录
+  gpuNum: 0   #每个trial运行时gpu个数
+```
+
+##### 1.2.2 搜索空间： search_space.json
+
+```json
+{
+	#定义了一次训练时所选取的样本数
+    "batch_size": {"_type":"choice", "_value": [16, 32, 64, 128]},
+	#定义了隐藏层尺寸
+    "hidden_size":{"_type":"choice","_value":[128, 256, 512, 1024]},
+	#定义学习率
+    "lr":{"_type":"choice","_value":[0.0001, 0.001, 0.01, 0.1]},
+	#定义动量
+    "momentum":{"_type":"uniform","_value":[0, 1]}
+}
+```
+
+以上，可得训练次数设置为10；最长运行时间2h；tuner为TPE。
+
+#### 1.3 运行结果
+
+Overview
+
+![image.png](https://i.loli.net/2021/01/03/QBWaoDud6t9myCf.png)
+
+Trial Detail & Default Metric
+
+![image.png](https://i.loli.net/2021/01/03/jrzvgdIMlihepXL.png)
+
+![image.png](https://i.loli.net/2021/01/03/568tMryjvqD27IA.png)
+
+Hyper Parameter
+
+![image.png](https://i.loli.net/2021/01/03/w7qXVpmfJsHMaex.png)
+
+Trial Duration
+
+![image.png](https://i.loli.net/2021/01/03/UfOFGSy56u7cwtQ.png)
+
+Intermediate result
+![image.png](https://i.loli.net/2021/01/03/nFaQB9ACSRgsobk.png)
+
+#### 1.4 结果分析
+
+- 十次测试中，有两次准确率极低，结合Hyper Parameter图像可知，主要因为学习率learnrate太大，一般情况下，当学习率过小时，收敛过程会变得十分缓慢，会导致代码运行时间过长的现象，而当学习率过大时，梯度可能会在最小值附件来回震荡，甚至可能无法收敛，本次调参过程中，两次准确率较低都是因为此原因。因此，在实际神经网络学习过程中，一般学习率不能过大也不宜过小。
+- batch_size的大小直接决定了训练所需时长，两者负相关，但与精度正相关，即batch_size越大，在同等精度时，需要的epoch越大，训练时长也越长。
+#### 1.5 使用体验
+- NNI有着良好的图形界面，安装方便等特点，能够从图形界面较为直观地看出训练结果

@@ -170,4 +170,20 @@ Intermediate result
 - 十次测试中，有两次准确率极低，结合Hyper Parameter图像可知，主要因为学习率learnrate太大，一般情况下，当学习率过小时，收敛过程会变得十分缓慢，会导致代码运行时间过长的现象，而当学习率过大时，梯度可能会在最小值附件来回震荡，甚至可能无法收敛，本次调参过程中，两次准确率较低都是因为此原因。因此，在实际神经网络学习过程中，一般学习率不能过大也不宜过小。
 - batch_size的大小直接决定了训练所需时长，两者负相关，但与精度正相关，即batch_size越大，在同等精度时，需要的epoch越大，训练时长也越长。
 #### 1.5 使用体验
+
 - NNI有着良好的图形界面，安装方便等特点，能够从图形界面较为直观地看出训练结果
+
+---
+
+#### 使用Windows Terminal 时遇到的问题
+
+在使用windows terminal 时，nni运行10s从waiting转到fail状态，无错误log，经检查，原来是anaconda未激活环境，解决方法,在windows terminal中`` code $profile`` 增加以下代码
+
+```powershell
+function Start-Anaconda() {
+    C:\ProgramData\Anaconda3\shell\condabin\conda-hook.ps1
+    conda activate 'C:\ProgramData\Anaconda3'
+}
+```
+
+每次启动base 环境时使用``Start-Anaconda``即可
